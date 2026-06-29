@@ -1,0 +1,51 @@
+# config.example.toml — ШАБЛОН конфигурации Avito Parser
+# Скопируйте в config.toml и заполните. НЕ коммитьте реальный config.toml с секретами.
+# Подробности по полям: docs/DOCS.md, docs/ANTIBLOCK.md, docs/NOTIFICATIONS.md
+
+[avito]
+# --- Уведомления (секреты! заполнять на сервере, не в git) ---
+tg_token = ""            # Telegram Bot Token (от @BotFather)
+tg_chat_id = []          # список chat_id, напр. ["123456789"]
+vk_token = ""            # VK community token
+vk_user_id = []          # список ID получателей VK, напр. ["12324556"]
+
+# --- Что мониторим ---
+urls = [
+    # вставьте свои ссылки-поиски Avito, например:
+    # "https://www.avito.ru/krasnodar/telefony/mobilnye_telefony/apple/iphone_16-ASgBAgICA0...?cd=1",
+]
+count = 1                # сколько страниц на ссылку (1 = только первая; >1 повышает риск 429)
+
+# --- Фильтры ---
+keys_word_white_list = []   # белый список слов (оставлять только содержащие)
+keys_word_black_list = []   # чёрный список слов (исключать)
+seller_black_list = []      # чёрный список продавцов (slug)
+max_price = 99999999
+min_price = 0
+geo = ""                    # ограничение по городу (подстрока адреса)
+max_age = 0                 # макс. возраст объявления в секундах (0 = выключено)
+
+# --- Прокси / антиблок (секреты!) ---
+proxy_string = ""           # username:password@host:port (серверный или мобильный)
+proxy_change_url = ""       # ссылка смены IP (только мобильный прокси)
+proxy_notifier = ""         # отдельный прокси для Telegram (host:port), опционально
+use_bypass_api = false      # использовать сервис cookies spfa.ru
+cookies_api_key = ""        # API-ключ spfa.ru (секрет)
+use_own_cookies = false     # использовать свои cookies (storage/own_cookies.json)
+use_webdriver = false       # (в серверном потоке не используется)
+
+# --- Поведение ---
+pause_general = 60          # пауза между полными проходами, сек
+pause_between_links = 5     # пауза между ссылками/страницами, сек
+max_count_of_retry = 5      # ретраи запроса
+retry_delay = 5             # пауза между ретраями, сек
+timeout = 20               # таймаут запроса, сек
+block_threshold = 3        # сколько блокировок до смены cookies/IP
+ignore_reserv = true       # игнорировать «в резерве»
+ignore_promotion = false   # игнорировать «продвинутые»
+one_time_start = false     # true = один проход и выход (для cron)
+one_file_for_link = false  # отдельный Excel-файл на каждую ссылку
+parse_views = false        # парсить просмотры (медленнее, больше запросов)
+parse_phone = false        # (функция отключена в коде)
+save_xlsx = true           # сохранять в Excel
+tg_only_text = false       # слать только текст без изображений
