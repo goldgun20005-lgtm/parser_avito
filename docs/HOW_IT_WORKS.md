@@ -43,11 +43,12 @@
    (вытащить slug продавца) → `_add_promotion_to_ads` (флаг «Продвинуто»).
 8. **Фильтрация** — `filter_ads()` → `AdsFilter.apply()`: конвейер фильтров (см. §6 диаграммы).
    Первым в конвейере идёт фильтр «уже просмотренные» (запрос к SQLite).
-9. **Уведомления** — `self.notifier.notify_many(filter_ads)` — **отправляются ДО сохранения в БД** ⚠️.
-10. **Просмотры/телефоны** — `parse_views` (если включено), `parse_phone` (отключено).
-11. **Запись «просмотрено»** — `__save_viewed()` → `INSERT OR REPLACE INTO viewed`.
-12. **Накопление** — отфильтрованные объявления копятся в `ads_in_link`.
-13. **Сохранение результата** — после всех страниц ссылки: `result_storage.save(ads_in_link)` → Excel.
+9. **Просмотры/телефоны** — `parse_views` (если включено), `parse_phone` (отключено) — ДО сохранения,
+   чтобы данные были полными.
+10. **Сохранение результата** — `result_storage.save(filter_ads)` (на каждой странице) → Excel. **Сначала.**
+11. **Уведомления** — `self.notifier.notify_many(filter_ads, source=url)` — после надёжного сохранения.
+12. **Запись «просмотрено»** — `__save_viewed()` → `INSERT OR IGNORE INTO viewed` (PRIMARY KEY id,price).
+13. **Накопление** — отфильтрованные объявления копятся в `ads_in_link` (для итогового лога).
 14. **Обработка ошибок запроса** — внутри `HttpClient.request`: при 401/403/429 счётчик блокировок;
     по достижении `block_threshold` → `cookies.handle_block()` + `proxy.handle_block()` (смена IP),
     пауза `retry_delay`, повтор до `max_count_of_retry`. При исчерпании — `RuntimeError`,
@@ -55,10 +56,10 @@
 15. **Следующий цикл** — после всех ссылок: лог статистики (хорошие/плохие запросы),
     пауза `pause_general`, новый проход.
 
-> ⚠️ **Критический нюанс порядка операций (Issue #300):** уведомление (шаг 9) и запись «просмотрено»
-> (шаг 11) происходят **до** записи результата в Excel (шаг 13). Если процесс упадёт между
-> шагом 11 и 13 — объявление уже помечено просмотренным, но в Excel не попало → **потеря данных**.
-> Подробнее: `KNOWN_ISSUES.md`, `IMPROVEMENT_ROADMAP.md` (P0).
+> ✅ **Порядок операций исправлен (Issue #300):** теперь **save → notify → mark_viewed**, причём
+> сохранение результата выполняется на каждой странице. Это гарантирует at-least-once: при сбое
+> возможен дубль, но **не потеря данных**. (В upstream-версии было notify→mark→save в конце ссылки.)
+> Подробнее: `KNOWN_ISSUES.md`, `IMPROVEMENT_ROADMAP.md` (P0.1).
 
 ## 3. Диаграмма процесса (по реальному коду)
 
@@ -80,14 +81,14 @@ flowchart TD
     J --> K[clean_null + add_seller + add_promotion]
     K --> L[AdsFilter.apply: конвейер фильтров]
     L --> M[is_viewed? SQLite record_exists id+price]
-    M --> N[notifier.notify_many — ДО записи в БД]
-    N --> O[parse_views / parse_phone]
-    O --> P[__save_viewed: INSERT OR REPLACE viewed]
-    P --> Q[накопить в ads_in_link]
+    M --> O[parse_views / parse_phone]
+    O --> S[result_storage.save -> Excel — СНАЧАЛА]
+    S --> N[notifier.notify_many source=url — затем]
+    N --> P[__save_viewed: INSERT OR IGNORE viewed — потом]
+    P --> Q[накопить в ads_in_link для лога]
     Q --> R{Ещё страницы?}
     R -->|Да| G
-    R -->|Нет| S[result_storage.save -> Excel]
-    S --> T{Ещё ссылки?}
+    R -->|Нет| T{Ещё ссылки?}
     T -->|Да| F
     T -->|Нет| U{one_time_start?}
     U -->|Да| U1[break — выход]

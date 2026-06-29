@@ -169,15 +169,17 @@ class AvitoParse:
 
                 filter_ads = self.filter_ads(ads=ads)
 
-                self.notifier.notify_many(ads=filter_ads, source=url)
-
-                # Просмотры
+                # Просмотры и телефоны считаем ДО сохранения/уведомления,
+                # чтобы и в файл, и в уведомление попали полные данные
                 filter_ads = self.parse_views(ads=filter_ads)
-
-                # Телефоны
                 filter_ads = self.parse_phone(ads=filter_ads)
 
                 if filter_ads:
+                    # Порядок критичен (fix #300): сначала НАДЁЖНО сохраняем результат,
+                    # затем уведомляем, и только потом помечаем просмотренными.
+                    # Гарантия "at-least-once": при сбое возможен дубль, но НЕ потеря данных.
+                    self.result_storage.save(filter_ads)
+                    self.notifier.notify_many(ads=filter_ads, source=url)
                     self.__save_viewed(ads=filter_ads)
                     ads_in_link.extend(filter_ads)
 
@@ -185,10 +187,9 @@ class AvitoParse:
                 time.sleep(self.config.pause_between_links)
 
             if ads_in_link:
-                logger.info(f"Сохраняю {len(ads_in_link)} объявлений")
-                self.result_storage.save(ads_in_link)
+                logger.info(f"Обработано и сохранено {len(ads_in_link)} объявлений по ссылке")
             else:
-                logger.info("Сохранять нечего")
+                logger.info("Новых объявлений нет, сохранять нечего")
 
         logger.info(f"Хорошие запросы: {self.good_request_count}шт, плохие: {self.bad_request_count}шт")
 

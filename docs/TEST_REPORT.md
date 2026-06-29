@@ -36,6 +36,12 @@
 | TG/VK нотификаторы принимают `**kwargs` (обратная совместимость) | ✅ OK |
 | SQLite-дедуп: `record_exists(id, price)`, смена цены = «новое» | ✅ OK |
 | `AvitoConfig` строится из `config.toml` (webhook-поля совместимы) | ✅ OK |
+| **P0-фиксы** (отдельный прогон) | |
+| ENV-override секретов в `load_config` (token/chat_id-список/webhook) | ✅ OK |
+| Авто-миграция старой БД без PK → `PRIMARY KEY (id, price)` + дедуп (4→2 строки) | ✅ OK |
+| Режим `journal_mode=WAL` | ✅ OK |
+| `INSERT OR IGNORE` не создаёт дубли строк | ✅ OK |
+| Порядок в `parse()`: save → notify → mark_viewed | ✅ OK (статическая проверка порядка) |
 
 **Реальный запрос к Avito из окружения аудита — НЕ удалось выполнить:** исходящее соединение к
 `avito.ru` блокируется egress-прокси песочницы (`curl 56: CONNECT tunnel failed, 403`). Это

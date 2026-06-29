@@ -1,2 +1,24 @@
-# created by virtualenv automatically
+# --- Секреты / локальная конфигурация ---
+.env
+*.local.toml
 .secret.txt
+
+# --- Рантайм-данные (не коммитим) ---
+database.db
+database.db-wal
+database.db-shm
+result/
+logs/
+storage/
+backups/
+cookies.json
+state.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# --- Прочее ---
+*.bak

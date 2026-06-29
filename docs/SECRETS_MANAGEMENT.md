@@ -25,7 +25,19 @@
 - **Надёжная эксплуатация:** `.env` через `env_file` в compose + строгий `.gitignore` + бэкап секретов отдельно от репо.
 - **Сервис/мультиарендность:** секретница (Vault/Doppler) или секреты оркестратора.
 
-## Минимальный безопасный набор изменений (кандидаты, в аудите НЕ применены)
+## ✅ Что уже реализовано в форке
+- `load_config.py` читает секреты из переменных окружения (`AVITO_TG_TOKEN`, `AVITO_TG_CHAT_ID`,
+  `AVITO_VK_TOKEN`, `AVITO_VK_USER_ID`, `AVITO_COOKIES_API_KEY`, `AVITO_PROXY_STRING`,
+  `AVITO_PROXY_CHANGE_URL`, `AVITO_PROXY_NOTIFIER`, `AVITO_WEBHOOK_URL`, `AVITO_WEBHOOK_SECRET`).
+  Непустая переменная **переопределяет** значение из `config.toml`. Списки (chat_id/user_id)
+  разделяются запятой/пробелом/переводом строки.
+- `.gitignore` расширен: `.env`, `storage/`, `database.db`, `result/`, `logs/`, `backups/`, `venv/`, `__pycache__/`.
+- `config.toml` оставлен в репозитории **без реальных секретов** (чтобы не ломать сборку Windows-релиза,
+  которая упаковывает `config.toml`). Реальные секреты держим в `.env`/окружении.
+
+**Как пользоваться:** `cp .env.example .env`, заполнить `AVITO_*`, в docker-compose уже подключён `env_file: .env`.
+
+## Минимальный безопасный набор изменений (исходные рекомендации)
 1. Добавить в `.gitignore`:
    ```
    .env
