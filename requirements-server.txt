@@ -1,0 +1,13 @@
+# Серверный режим (parser_cls.py) — БЕЗ GUI (flet) и Playwright.
+# Для лёгкого Docker-образа: pip install -r requirements-server.txt
+# (Playwright нужен только для GUI-логина в аккаунт, который в headless-Docker не работает.)
+beautifulsoup4==4.13.4
+curl_cffi==0.15.0
+loguru==0.7.0
+openpyxl==3.1.5
+pydantic==2.9.2
+requests==2.32.3
+tomli_w==1.2.0
+tzdata==2025.2
+tzlocal==5.3.1
+httpx==0.28.1

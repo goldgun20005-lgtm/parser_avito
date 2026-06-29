@@ -347,10 +347,18 @@ if __name__ == "__main__":
         logger.error(f"Ошибка загрузки конфига: {err}")
         exit(1)
 
+    # Отдельный нотификатор для алертов об ошибках (TG/VK/webhook — по конфигу)
+    try:
+        alert_notifier = build_notifier(config=config)
+    except Exception:
+        alert_notifier = None
+
+    consecutive_failures = 0
     while not stop_event.is_set():
         try:
             parser = AvitoParse(config, stop_event=stop_event)
             parser.parse()
+            consecutive_failures = 0
             if config.one_time_start:
                 logger.info("Парсинг завершен т.к. включён one_time_start в настройках")
                 break
@@ -359,8 +367,17 @@ if __name__ == "__main__":
             if stop_event.wait(timeout=config.pause_general):
                 break
         except Exception as err:
+            consecutive_failures += 1
             logger.exception(err)
             logger.error(f"Произошла ошибка {err}. Будет повторный запуск через 30 сек.")
+            # Алерт при устойчивых сбоях (без сырого текста ошибки — безопасно для MarkdownV2)
+            if alert_notifier and consecutive_failures in (3, 10, 30):
+                try:
+                    alert_notifier.notify(
+                        message=f"Avito parser: {consecutive_failures} ошибок подряд, см. логи"
+                    )
+                except Exception:
+                    pass
             if stop_event.wait(timeout=30):
                 break
 

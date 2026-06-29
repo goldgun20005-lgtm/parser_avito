@@ -44,10 +44,10 @@
 | P1.5 | Хрупкость Pydantic (#306/#307) | `extra="ignore"` + парсинг объявлений по одному (битые пропускаются) | `models.py`, `parser_cls.py` | ✅ СДЕЛАНО |
 | P1.7 | Backup БД/результатов | скрипт + cron (sqlite `.backup`) | `scripts/backup.sh` | ✅ СДЕЛАНО |
 | P1.10 | Неверный volume cookies в compose | монтировать `./storage`, а не `cookies.json` | `docker-compose.prod.yml` | ✅ СДЕЛАНО |
+| P1.4 | Атомарность записи Excel | сохранение во временный файл + `os.replace` | `parser/export/excel.py` | ✅ СДЕЛАНО |
+| P1.6 | Отдельные уведомления об ошибках | алерт через нотификатор при 3/10/30 ошибках подряд | `parser_cls.py` | ✅ СДЕЛАНО |
+| P1.8 | Пин версий + UTF-8 + раздельные requirements | `curl_cffi==0.15.0`, `httpx==0.28.1`, UTF-8, `requirements-server.txt` | `requirements*.txt` | ✅ СДЕЛАНО |
 | P1.3 | Нет rate limiting / circuit breaker | адаптация паузы при росте ошибок; circuit breaker по доле 403/429 | `parser/http/client.py` | ⏳ TODO |
-| P1.4 | Атомарность записи Excel | временный файл + rename | `parser/export/excel.py` | ⏳ TODO |
-| P1.6 | Отдельные уведомления об ошибках | алерт в TG/webhook при N подряд неудачных циклах | `parser_cls.py` | ⏳ TODO |
-| P1.8 | Пин версий `curl_cffi`/`httpx` | зафиксировать; разнести requirements (сервер/GUI) | `requirements.txt` | ⏳ TODO |
 | P1.9 | Docker от root, без HEALTHCHECK | non-root в Dockerfile; HEALTHCHECK (в prod-compose уже есть healthcheck+лимиты) | `Dockerfile` | ⏳ TODO (требует build-теста) |
 
 ## P2 — архитектура

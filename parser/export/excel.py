@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from threading import Lock
 from datetime import datetime
@@ -123,7 +124,11 @@ class ExcelStorage(ResultStorage):
 
                 sheet.append(row)
 
-            workbook.save(self.file_path)
+            # Атомарная запись: сохраняем во временный файл и подменяем
+            # (исключает повреждение xlsx при сбое во время сохранения)
+            tmp_path = self.file_path.with_suffix(self.file_path.suffix + ".tmp")
+            workbook.save(tmp_path)
+            os.replace(tmp_path, self.file_path)
 
 
 
