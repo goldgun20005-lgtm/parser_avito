@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avito Parser — Панель управления</title>
+<style>
+  :root{
+    --bg:#0f1216; --panel:#171c23; --panel2:#1e242d; --border:#2a323d;
+    --text:#e6edf3; --muted:#8b97a7; --accent:#3fb950; --accent2:#2ea043;
+    --danger:#f85149; --warn:#d29922; --blue:#388bfd; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+  a{color:var(--blue)}
+  /* header */
+  header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:16px;
+    padding:14px 22px;background:linear-gradient(180deg,#161b22,#11151b);
+    border-bottom:1px solid var(--border)}
+  .logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px}
+  .logo .v{font-size:11px;color:var(--muted);font-weight:500}
+  .spacer{flex:1}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 0 rgba(0,0,0,0)}
+  .dot.on{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .dot.off{background:var(--danger)}
+  button{font:inherit;cursor:pointer;border:none;border-radius:9px;padding:9px 16px;
+    font-weight:600;transition:.15s;color:#fff}
+  .btn-primary{background:var(--accent2)} .btn-primary:hover{background:var(--accent)}
+  .btn-danger{background:#b62324} .btn-danger:hover{background:var(--danger)}
+  .btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+  .btn-ghost:hover{border-color:var(--muted)}
+  .btn-sm{padding:6px 12px;font-size:12.5px}
+  /* layout */
+  .wrap{display:flex;max-width:1180px;margin:0 auto;gap:22px;padding:22px}
+  nav.tabs{display:flex;flex-direction:column;gap:4px;min-width:210px;position:sticky;top:78px;align-self:flex-start}
+  .tab{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;color:var(--muted);
+    cursor:pointer;font-weight:600;user-select:none}
+  .tab:hover{background:var(--panel)}
+  .tab.active{background:var(--panel);color:var(--text);box-shadow:inset 3px 0 0 var(--accent)}
+  main{flex:1;min-width:0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px 24px;margin-bottom:18px}
+  .card h2{margin:0 0 4px;font-size:18px}
+  .card .sub{color:var(--muted);margin:0 0 18px;font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+  .grid .full{grid-column:1/-1}
+  .field label{display:block;font-weight:600;margin-bottom:6px;font-size:13px}
+  .field .hint{color:var(--muted);font-size:12px;margin-top:5px}
+  input[type=text],input[type=password],input[type=number],textarea{width:100%;background:var(--panel2);
+    border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font:inherit;outline:none}
+  input:focus,textarea:focus{border-color:var(--accent)}
+  textarea{resize:vertical;min-height:84px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  .toggle{display:flex;align-items:center;gap:12px;padding:10px 0}
+  .switch{position:relative;width:44px;height:24px;flex:none}
+  .switch input{display:none}
+  .slider{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--border);border-radius:24px;transition:.2s}
+  .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:2px;background:var(--muted);border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:rgba(63,185,80,.25);border-color:var(--accent)}
+  .switch input:checked + .slider:before{transform:translateX(20px);background:var(--accent)}
+  .group-title{grid-column:1/-1;font-weight:700;color:var(--accent);font-size:13px;text-transform:uppercase;
+    letter-spacing:.04em;margin:10px 0 -2px;padding-top:10px;border-top:1px dashed var(--border)}
+  .group-title:first-child{border-top:none;padding-top:0;margin-top:0}
+  .test-row{grid-column:1/-1}
+  /* run tab */
+  .run-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  pre.logs{background:#0b0e12;border:1px solid var(--border);border-radius:10px;padding:14px;
+    height:340px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
+    white-space:pre-wrap;color:#cbd5e1;margin:0}
+  .preview{background:#0b0e12;border:1px solid var(--border);border-radius:10px;padding:14px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;white-space:pre;overflow:auto;max-height:280px}
+  .row-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  /* toast */
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:var(--panel2);border:1px solid var(--border);padding:12px 20px;border-radius:10px;
+    transition:.25s;pointer-events:none;z-index:50;max-width:90%}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.ok{border-color:var(--accent)} #toast.err{border-color:var(--danger)}
+  .banner{background:rgba(210,153,34,.12);border:1px solid var(--warn);color:#e8c976;
+    padding:10px 14px;border-radius:9px;font-size:12.5px;margin-bottom:16px;display:none}
+  @media(max-width:820px){.wrap{flex-direction:column}.grid{grid-template-columns:1fr}nav.tabs{flex-direction:row;flex-wrap:wrap;position:static}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🟢 Avito Parser <span class="v" id="ver">панель управления</span></div>
+  <div class="spacer"></div>
+  <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">статус неизвестен</span></div>
+  <button class="btn-primary" id="startBtn">▶ Старт</button>
+  <button class="btn-danger" id="stopBtn">■ Стоп</button>
+  <button class="btn-primary" id="saveBtn">💾 Сохранить</button>
+</header>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs"></nav>
+  <main id="main"></main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────── СХЕМА ПОЛЕЙ ───────────────────────────────────────────
+const SCHEMA = [
+  {id:'search', icon:'🔍', title:'Поиски', desc:'Какие ссылки-поиски Avito отслеживаем.', fields:[
+    {k:'urls', label:'Ссылки-поиски Avito (по одной на строку)', type:'list', full:true,
+      hint:'Открой нужный поиск на avito.ru и скопируй ссылку из адресной строки.'},
+    {k:'count', label:'Сколько страниц на ссылку', type:'int', def:1, hint:'1 — только первая. Больше — выше риск блокировок (429).'},
+  ]},
+  {id:'filters', icon:'🧮', title:'Фильтры', desc:'Что оставлять, а что отсеивать.', fields:[
+    {k:'min_price', label:'Минимальная цена', type:'int', def:0},
+    {k:'max_price', label:'Максимальная цена', type:'int', def:99999999},
+    {k:'keys_word_white_list', label:'Белый список слов (по строке)', type:'list', full:true, hint:'Оставлять только объявления, содержащие эти слова.'},
+    {k:'keys_word_black_list', label:'Чёрный список слов (по строке)', type:'list', full:true, hint:'Исключать объявления с этими словами.'},
+    {k:'seller_black_list', label:'Чёрный список продавцов (по строке)', type:'list', full:true},
+    {k:'geo', label:'Ограничение по городу', type:'text'},
+    {k:'max_age', label:'Макс. возраст объявления, сек (0 = выкл.)', type:'int', def:0},
+    {k:'ignore_reserv', label:'Игнорировать «в резерве»', type:'bool', def:true},
+    {k:'ignore_promotion', label:'Игнорировать «продвинутые»', type:'bool', def:false},
+  ]},
+  {id:'notify', icon:'📣', title:'Уведомления', desc:'Куда слать новые объявления.', fields:[
+    {group:'Webhook / n8n'},
+    {k:'webhook_url', label:'Webhook URL (n8n)', type:'text', full:true, hint:'Парсер шлёт JSON-POST на каждое новое объявление. В payload есть поле source для маршрутизации по друзьям.'},
+    {k:'webhook_secret', label:'Webhook секрет (заголовок X-Webhook-Secret)', type:'password', full:true},
+    {test:'webhook', label:'Проверить webhook'},
+    {group:'Telegram'},
+    {k:'tg_token', label:'Telegram Bot Token', type:'password'},
+    {k:'proxy_notifier', label:'Прокси для Telegram (host:port)', type:'text'},
+    {k:'tg_chat_id', label:'Chat ID (по строке)', type:'list', full:true},
+    {k:'tg_only_text', label:'Слать только текст без фото', type:'bool', def:false},
+    {test:'telegram', label:'Проверить Telegram'},
+    {group:'VK'},
+    {k:'vk_token', label:'VK community token', type:'password'},
+    {k:'vk_user_id', label:'VK user ID (по строке)', type:'list', full:true},
+    {test:'vk', label:'Проверить VK'},
+  ]},
+  {id:'antiblock', icon:'🛡', title:'Антиблок', desc:'Обход блокировок Avito (403/429).', fields:[
+    {k:'use_bypass_api', label:'Использовать spfa.ru (cookies-сервис)', type:'bool', def:false},
+    {k:'cookies_api_key', label:'API-ключ spfa.ru', type:'password'},
+    {k:'proxy_string', label:'Прокси (user:pass@host:port)', type:'password', full:true},
+    {k:'proxy_change_url', label:'Ссылка смены IP (только моб. прокси)', type:'text', full:true},
+    {k:'use_own_cookies', label:'Использовать свои cookies (storage/own_cookies.json)', type:'bool', def:false},
+  ]},
+  {id:'behavior', icon:'⚙️', title:'Поведение', desc:'Тайминги, повторы, режимы.', fields:[
+    {k:'pause_general', label:'Пауза между проходами, сек', type:'int', def:60},
+    {k:'pause_between_links', label:'Пауза между ссылками, сек', type:'int', def:5},
+    {k:'retry_delay', label:'Пауза между повторами, сек', type:'int', def:5},
+    {k:'timeout', label:'Таймаут запроса, сек', type:'int', def:20},
+    {k:'max_count_of_retry', label:'Макс. повторов', type:'int', def:5},
+    {k:'block_threshold', label:'Блокировок до смены cookies/IP', type:'int', def:3},
+    {k:'one_time_start', label:'Один проход и выход (для cron)', type:'bool', def:false},
+    {k:'one_file_for_link', label:'Отдельный Excel на каждую ссылку', type:'bool', def:false},
+    {k:'parse_views', label:'Парсить просмотры (медленнее)', type:'bool', def:false},
+    {k:'save_xlsx', label:'Сохранять в Excel', type:'bool', def:true},
+  ]},
+  {id:'run', icon:'▶️', title:'Запуск и логи', desc:'Управление процессом и просмотр логов.', custom:true},
+];
+
+const LIST_KEYS = ['urls','keys_word_white_list','keys_word_black_list','seller_black_list','tg_chat_id','vk_user_id'];
+const INT_KEYS  = ['count','min_price','max_price','max_age','pause_general','pause_between_links','retry_delay','timeout','max_count_of_retry','block_threshold'];
+const BOOL_KEYS = ['ignore_reserv','ignore_promotion','one_time_start','one_file_for_link','parse_views','save_xlsx','use_bypass_api','use_own_cookies','tg_only_text'];
+
+let state = {};        // текущие значения формы
+let backendOnline = false;
+
+// ─────────────────────────────────────────── РЕНДЕР ───────────────────────────────────────────
+function el(tag, attrs={}, ...kids){const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs)){if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;else e.setAttribute(k,v);}
+  kids.flat().forEach(k=>e.append(k));return e;}
+
+function renderTabs(){
+  const nav=document.getElementById('tabs');nav.innerHTML='';
+  SCHEMA.forEach((s,i)=>{
+    const t=el('div',{class:'tab'+(i===0?' active':''),'data-id':s.id},`${s.icon}  ${s.title}`);
+    t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');showSection(s.id);};
+    nav.append(t);
+  });
+}
+
+function fieldNode(f){
+  if(f.group) return el('div',{class:'group-title'}, f.group);
+  if(f.test){
+    const b=el('button',{class:'btn-ghost btn-sm'}, '🧪 '+f.label);
+    b.onclick=()=>runTest(f.test);
+    return el('div',{class:'test-row'}, b);
+  }
+  const wrap=el('div',{class:'field'+(f.full?' full':'')});
+  if(f.type==='bool'){
+    const sw=el('label',{class:'switch'});
+    const inp=el('input',{type:'checkbox','data-k':f.k});
+    inp.checked=!!state[f.k];
+    sw.append(inp, el('span',{class:'slider'}));
+    wrap.append(el('div',{class:'toggle'}, sw, el('label',{},f.label)));
+    if(f.hint) wrap.append(el('div',{class:'hint'},f.hint));
+    return wrap;
+  }
+  wrap.append(el('label',{},f.label));
+  let inp;
+  if(f.type==='list'){inp=el('textarea',{'data-k':f.k}); inp.value=(state[f.k]||[]).join('\n');}
+  else if(f.type==='int'){inp=el('input',{type:'number','data-k':f.k}); inp.value=(state[f.k]??f.def??'');}
+  else {inp=el('input',{type:f.type==='password'?'password':'text','data-k':f.k}); inp.value=state[f.k]??'';}
+  wrap.append(inp);
+  if(f.hint) wrap.append(el('div',{class:'hint'},f.hint));
+  return wrap;
+}
+
+function showSection(id){
+  const s=SCHEMA.find(x=>x.id===id);const main=document.getElementById('main');main.innerHTML='';
+  if(s.custom){ main.append(runCard()); return; }
+  const card=el('div',{class:'card'});
+  card.append(el('h2',{},`${s.icon} ${s.title}`), el('p',{class:'sub'},s.desc));
+  const grid=el('div',{class:'grid'});
+  s.fields.forEach(f=>grid.append(fieldNode(f)));
+  card.append(grid);main.append(card);
+}
+
+function runCard(){
+  const card=el('div',{class:'card'});
+  card.append(el('h2',{},'▶️ Запуск и логи'), el('p',{class:'sub'},'Старт/стоп парсера, логи и предпросмотр конфигурации.'));
+  const actions=el('div',{class:'run-actions'});
+  const st=el('span',{class:'status'}, el('span',{class:'dot '+(state.__running?'on':'off')}), el('span',{}, state.__running?'парсер работает':'остановлен'));
+  const b1=el('button',{class:'btn-primary'},'▶ Старт'); b1.onclick=()=>ctl('start');
+  const b2=el('button',{class:'btn-danger'},'■ Стоп'); b2.onclick=()=>ctl('stop');
+  const b3=el('button',{class:'btn-ghost'},'⟳ Обновить логи'); b3.onclick=loadLogs;
+  actions.append(st,b1,b2,b3);
+  const logs=el('pre',{class:'logs',id:'logs'}, backendOnline?'Загрузка логов…':'Логи доступны при запуске webpanel.py');
+  // previews
+  const cfgHead=el('div',{class:'row-between'}, el('strong',{},'config.toml'),
+    btnGroup([['Копировать',()=>copyText(genToml())],['Скачать',()=>download('config.toml',genToml())]]));
+  const cfg=el('div',{class:'preview',id:'cfgPrev'}, genToml());
+  const envHead=el('div',{class:'row-between',style:'margin-top:16px'}, el('strong',{},'.env (секреты для Docker)'),
+    btnGroup([['Копировать',()=>copyText(genEnv())],['Скачать',()=>download('.env',genEnv())]]));
+  const env=el('div',{class:'preview',id:'envPrev'}, genEnv());
+  card.append(actions,logs, el('div',{style:'height:14px'}), cfgHead,cfg, envHead,env);
+  if(backendOnline) setTimeout(loadLogs,50);
+  return card;
+}
+function btnGroup(arr){const d=el('div',{});arr.forEach(([t,fn])=>{const b=el('button',{class:'btn-ghost btn-sm',style:'margin-left:8px'},t);b.onclick=fn;d.append(b);});return d;}
+
+// ─────────────────────────────────────────── СБОР/ГЕНЕРАЦИЯ ───────────────────────────────────────────
+function collect(){ // вытащить текущие значения из DOM в state
+  document.querySelectorAll('[data-k]').forEach(inp=>{
+    const k=inp.getAttribute('data-k');
+    if(inp.type==='checkbox') state[k]=inp.checked;
+    else if(LIST_KEYS.includes(k)) state[k]=inp.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    else if(INT_KEYS.includes(k)) state[k]=parseInt(inp.value||'0',10)||0;
+    else state[k]=inp.value;
+  });
+  refreshPreview();
+}
+function refreshPreview(){const c=document.getElementById('cfgPrev');if(c)c.textContent=genToml();
+  const e=document.getElementById('envPrev');if(e)e.textContent=genEnv();}
+
+function tomlVal(v){
+  if(Array.isArray(v)) return '['+v.map(x=>JSON.stringify(x)).join(', ')+']';
+  if(typeof v==='boolean') return v?'true':'false';
+  if(typeof v==='number') return String(v);
+  return JSON.stringify(v??'');
+}
+function genToml(){
+  const order=['tg_token','tg_chat_id','vk_token','vk_user_id','webhook_url','webhook_secret','urls','count',
+    'keys_word_white_list','keys_word_black_list','seller_black_list','max_price','min_price','geo',
+    'proxy_string','proxy_change_url','proxy_notifier','use_bypass_api','cookies_api_key','use_own_cookies',
+    'pause_general','pause_between_links','max_age','max_count_of_retry','retry_delay','timeout','block_threshold',
+    'ignore_reserv','ignore_promotion','one_time_start','one_file_for_link','parse_views','save_xlsx','tg_only_text'];
+  let out='[avito]\n';
+  order.forEach(k=>{ if(state[k]!==undefined) out+=`${k} = ${tomlVal(state[k])}\n`; });
+  return out;
+}
+function genEnv(){
+  const map={AVITO_TG_TOKEN:'tg_token',AVITO_VK_TOKEN:'vk_token',AVITO_COOKIES_API_KEY:'cookies_api_key',
+    AVITO_PROXY_STRING:'proxy_string',AVITO_WEBHOOK_URL:'webhook_url',AVITO_WEBHOOK_SECRET:'webhook_secret',
+    AVITO_TG_CHAT_ID:'tg_chat_id',AVITO_VK_USER_ID:'vk_user_id'};
+  let out='TZ=Europe/Moscow\n';
+  for(const[env,k]of Object.entries(map)){let v=state[k];if(Array.isArray(v))v=v.join(',');if(v)out+=`${env}=${v}\n`;}
+  return out;
+}
+
+// ─────────────────────────────────────────── API ───────────────────────────────────────────
+async function api(path,opts){ const r=await fetch(path,opts); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+
+async function loadConfig(){
+  try{
+    const d=await api('/api/config'); backendOnline=true;
+    state=Object.assign({}, d.avito||{});
+  }catch(e){
+    backendOnline=false;
+    // дефолты + localStorage (режим «просто открыл файл»)
+    const saved=localStorage.getItem('avito_cfg');
+    state=saved?JSON.parse(saved):defaults();
+  }
+  applyDefaults();
+  document.getElementById('ver').textContent=backendOnline?'панель управления • backend online':'панель управления • офлайн-режим (редактор конфига)';
+  document.querySelector('.banner-host')?.remove();
+}
+function defaults(){const d={};SCHEMA.forEach(s=>(s.fields||[]).forEach(f=>{if(f.k&&f.def!==undefined)d[f.k]=f.def;}));
+  LIST_KEYS.forEach(k=>d[k]=d[k]||[]);return d;}
+function applyDefaults(){const d=defaults();for(const k in d)if(state[k]===undefined)state[k]=d[k];}
+
+async function refreshStatus(){
+  try{const s=await api('/api/status');backendOnline=true;state.__running=s.running;}
+  catch(e){backendOnline=false;state.__running=undefined;}
+  const dot=document.getElementById('statusDot'),txt=document.getElementById('statusText');
+  if(state.__running===undefined){dot.className='dot';txt.textContent='backend офлайн';}
+  else if(state.__running){dot.className='dot on';txt.textContent='парсер работает';}
+  else{dot.className='dot off';txt.textContent='остановлен';}
+}
+
+async function save(){
+  collect();
+  localStorage.setItem('avito_cfg',JSON.stringify(state));
+  if(!backendOnline){ download('config.toml',genToml()); toast('Backend офлайн — скачал config.toml','ok'); return; }
+  try{ await api('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});
+    toast('Настройки сохранены в config.toml ✅','ok'); }
+  catch(e){ toast('Ошибка сохранения: '+e.message,'err'); }
+}
+
+async function ctl(action){
+  if(!backendOnline){toast('Доступно при запуске webpanel.py','err');return;}
+  try{ await save(); const s=await api('/api/'+action,{method:'POST'}); state.__running=s.running;
+    toast(action==='start'?'Парсер запущен ▶':'Парсер остановлен ■','ok'); refreshStatus(); showSection('run'); }
+  catch(e){ toast('Ошибка: '+e.message,'err'); }
+}
+
+async function loadLogs(){
+  const pre=document.getElementById('logs'); if(!pre)return;
+  if(!backendOnline){pre.textContent='Логи доступны при запуске webpanel.py';return;}
+  try{const d=await api('/api/logs?n=300');pre.textContent=d.text||'(логи пусты)';pre.scrollTop=pre.scrollHeight;}
+  catch(e){pre.textContent='Не удалось получить логи: '+e.message;}
+}
+
+async function runTest(kind){
+  collect();
+  if(!backendOnline){toast('Тесты доступны при запуске webpanel.py','err');return;}
+  toast('Отправляю тест…','ok');
+  try{
+    const body=kind==='webhook'?{url:state.webhook_url,secret:state.webhook_secret}:
+      kind==='telegram'?{token:state.tg_token,chat_id:state.tg_chat_id,proxy:state.proxy_notifier}:
+      {token:state.vk_token,user_id:state.vk_user_id};
+    const d=await api('/api/test-'+kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    toast(d.ok?('✅ '+kind+': отправлено'):('⚠ '+kind+': '+(d.error||'ошибка')), d.ok?'ok':'err');
+  }catch(e){toast('Ошибка теста: '+e.message,'err');}
+}
+
+// ─────────────────────────────────────────── УТИЛИТЫ ───────────────────────────────────────────
+function toast(msg,kind){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+(kind||'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.className='',2600);}
+function copyText(s){navigator.clipboard?.writeText(s).then(()=>toast('Скопировано','ok'),()=>toast('Не удалось','err'));}
+function download(name,text){const a=el('a',{href:URL.createObjectURL(new Blob([text],{type:'text/plain'})),download:name});a.click();}
+
+// автосохранение значений в state при вводе
+document.addEventListener('input',e=>{if(e.target.matches('[data-k]'))collect();});
+
+document.getElementById('saveBtn').onclick=save;
+document.getElementById('startBtn').onclick=()=>ctl('start');
+document.getElementById('stopBtn').onclick=()=>ctl('stop');
+
+// ─────────────────────────────────────────── СТАРТ ───────────────────────────────────────────
+(async function init(){
+  renderTabs();
+  await loadConfig();
+  showSection('search');
+  await refreshStatus();
+  setInterval(refreshStatus, 5000);
+})();
+</script>
+</body>
+</html>
