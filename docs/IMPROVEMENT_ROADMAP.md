@@ -37,18 +37,18 @@
 
 ## P1 — стабильность
 
-| # | Проблема | Решение | Файлы | Сложн. | Риск |
-|---|---|---|---|---|---|
-| P1.1 | Нет graceful shutdown (SIGTERM не доходит) | `exec python` в entrypoint, `init: true`, обработчик SIGTERM → `stop_event` | `entrypoint.sh`, `parser_cls.py`, compose | низк. | низк. |
-| P1.2 | Ретраи без backoff/jitter | экспоненциальный backoff + jitter в `HttpClient` | `parser/http/client.py` | низк. | низк. |
-| P1.3 | Нет rate limiting / circuit breaker | пауза-адаптация при росте ошибок; circuit breaker по доле 403/429 | `parser/http/client.py` | сред. | сред. |
-| P1.4 | Атомарность записи Excel | временный файл + rename; либо построчный append через csv | `parser/export/excel.py` | низк. | низк. |
-| P1.5 | Хрупкость Pydantic (#306/#307) | `extra="ignore"`, больше `Optional`/defaults, «мягкий» парсинг | `models.py` | сред. | сред. |
-| P1.6 | Отдельные уведомления об ошибках | алерт в TG при N подряд неудачных циклах / блокировках | `parser_cls.py`, `integrations/*` | сред. | низк. |
-| P1.7 | Backup БД/результатов | скрипт + cron (sqlite `.backup`) | новый скрипт | низк. | низк. |
-| P1.8 | Пин версий `curl_cffi`/`httpx` | зафиксировать; разнести requirements (сервер/GUI) | `requirements.txt` | низк. | низк. |
-| P1.9 | Docker от root, без HEALTHCHECK | non-root, HEALTHCHECK, лимиты ресурсов | `Dockerfile`, compose | сред. | низк. |
-| P1.10 | Неверный volume cookies в compose | монтировать `./storage`, а не `cookies.json` | compose | низк. | низк. |
+| # | Проблема | Решение | Файлы | Статус |
+|---|---|---|---|---|
+| P1.1 | Нет graceful shutdown (SIGTERM не доходит) | `exec python` в entrypoint, `init: true`, обработчик SIGTERM/SIGINT → `stop_event`, прерываемые паузы | `entrypoint.sh`, `parser_cls.py`, `docker-compose.prod.yml` | ✅ СДЕЛАНО |
+| P1.2 | Ретраи без backoff/jitter | экспоненциальный backoff + jitter (cap 60с) в `HttpClient._backoff_delay` | `parser/http/client.py` | ✅ СДЕЛАНО |
+| P1.5 | Хрупкость Pydantic (#306/#307) | `extra="ignore"` + парсинг объявлений по одному (битые пропускаются) | `models.py`, `parser_cls.py` | ✅ СДЕЛАНО |
+| P1.7 | Backup БД/результатов | скрипт + cron (sqlite `.backup`) | `scripts/backup.sh` | ✅ СДЕЛАНО |
+| P1.10 | Неверный volume cookies в compose | монтировать `./storage`, а не `cookies.json` | `docker-compose.prod.yml` | ✅ СДЕЛАНО |
+| P1.3 | Нет rate limiting / circuit breaker | адаптация паузы при росте ошибок; circuit breaker по доле 403/429 | `parser/http/client.py` | ⏳ TODO |
+| P1.4 | Атомарность записи Excel | временный файл + rename | `parser/export/excel.py` | ⏳ TODO |
+| P1.6 | Отдельные уведомления об ошибках | алерт в TG/webhook при N подряд неудачных циклах | `parser_cls.py` | ⏳ TODO |
+| P1.8 | Пин версий `curl_cffi`/`httpx` | зафиксировать; разнести requirements (сервер/GUI) | `requirements.txt` | ⏳ TODO |
+| P1.9 | Docker от root, без HEALTHCHECK | non-root в Dockerfile; HEALTHCHECK (в prod-compose уже есть healthcheck+лимиты) | `Dockerfile` | ⏳ TODO (требует build-теста) |
 
 ## P2 — архитектура
 

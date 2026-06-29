@@ -42,6 +42,12 @@
 | Режим `journal_mode=WAL` | ✅ OK |
 | `INSERT OR IGNORE` не создаёт дубли строк | ✅ OK |
 | Порядок в `parse()`: save → notify → mark_viewed | ✅ OK (статическая проверка порядка) |
+| **P1-фиксы** (отдельный прогон) | |
+| Tolerant per-item parsing: 1 битый из 3 пропущен, 2 валидных сохранены (#306/#307) | ✅ OK |
+| `Item` игнорирует неизвестные поля (`extra="ignore"`) | ✅ OK |
+| Backoff экспоненциальный + джиттер + cap 60с | ✅ OK |
+| Graceful shutdown: SIGTERM/SIGINT → `stop_event`, прерываемые паузы; баг `stop_event=True` убран | ✅ OK (статически) |
+| `entrypoint.sh` использует `exec python` | ✅ OK |
 
 **Реальный запрос к Avito из окружения аудита — НЕ удалось выполнить:** исходящее соединение к
 `avito.ru` блокируется egress-прокси песочницы (`curl 56: CONNECT tunnel failed, 403`). Это

@@ -5,4 +5,5 @@ wait_seconds=1
 echo "Waiting for $wait_seconds seconds..."
 sleep $wait_seconds
 cd /app
-python parser_cls.py
+# exec — чтобы python стал PID 1 и получал SIGTERM от docker stop (graceful shutdown)
+exec python parser_cls.py

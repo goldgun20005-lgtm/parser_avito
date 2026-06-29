@@ -15,7 +15,7 @@ from filters.ads_filter import AdsFilter
 from hide_private_data import log_config
 from integrations.notifications.factory import build_notifier
 from load_config import load_avito_config
-from models import ItemsResponse, Item
+from models import Item
 from parser.cookies.factory import build_cookies_provider
 from parser.export.factory import build_result_storage
 from parser.http.client import HttpClient
@@ -144,18 +144,16 @@ class AvitoParse:
 
                     api_params = build_api_params(search_core)
 
-                try:
-                    if i == 0:
-                        catalog = data_from_page.get("catalog") or {}
-                    else:
-                        catalog = json_data.get("catalog") or json_data.get("result", {}).get("catalog") or {}
+                if i == 0:
+                    catalog = data_from_page.get("catalog") or {}
+                else:
+                    catalog = json_data.get("catalog") or json_data.get("result", {}).get("catalog") or {}
 
-                    ads_models = ItemsResponse(**catalog)
-                except ValidationError as err:
-                    logger.error(f"При валидации объявлений произошла ошибка: {err}")
-                    continue
+                # Парсим объявления по одному, пропуская некорректные
+                # (устойчивость к изменениям разметки Avito, #305/#306/#307)
+                ads = self._parse_items_tolerant(catalog)
 
-                ads = self._clean_null_ads(ads=ads_models.items)
+                ads = self._clean_null_ads(ads=ads)
 
                 logger.info(f"Объявлений перед чисткой {len(ads)}")
 
@@ -195,7 +193,26 @@ class AvitoParse:
 
         if self.config.one_time_start:
             self.notifier.notify(message="Парсинг Авито завершён. Все ссылки обработаны")
-            self.stop_event = True
+
+    @staticmethod
+    def _parse_items_tolerant(catalog: dict) -> list[Item]:
+        """Парсит объявления по одному, пропуская некорректные.
+
+        В отличие от валидации всего списка целиком, одно «битое» объявление
+        не роняет всю страницу (устойчивость к изменениям разметки Avito).
+        """
+        items = catalog.get("items") or []
+        result: list[Item] = []
+        skipped = 0
+        for raw in items:
+            try:
+                result.append(Item(**raw))
+            except (ValidationError, TypeError) as err:
+                skipped += 1
+                logger.debug(f"Пропущено объявление из-за ошибки валидации: {err}")
+        if skipped:
+            logger.warning(f"Пропущено {skipped} объявлений из-за несоответствия модели")
+        return result
 
     @staticmethod
     def _clean_null_ads(ads: list[Item]) -> list[Item]:
@@ -311,22 +328,40 @@ class AvitoParse:
 
 
 if __name__ == "__main__":
+    import signal
+    import threading
+
+    # Graceful shutdown: по SIGTERM/SIGINT корректно завершаем текущий цикл
+    stop_event = threading.Event()
+
+    def _handle_stop(signum, _frame):
+        logger.info(f"Получен сигнал {signum} — завершаюсь корректно (graceful shutdown)")
+        stop_event.set()
+
+    signal.signal(signal.SIGTERM, _handle_stop)
+    signal.signal(signal.SIGINT, _handle_stop)
+
     try:
         config = load_avito_config("config.toml")
     except Exception as err:
         logger.error(f"Ошибка загрузки конфига: {err}")
         exit(1)
 
-    while True:
+    while not stop_event.is_set():
         try:
-            parser = AvitoParse(config)
+            parser = AvitoParse(config, stop_event=stop_event)
             parser.parse()
             if config.one_time_start:
                 logger.info("Парсинг завершен т.к. включён one_time_start в настройках")
                 break
             logger.info(f"Парсинг завершен. Пауза {config.pause_general} сек")
-            time.sleep(config.pause_general)
+            # прерываемая пауза — мгновенно реагируем на сигнал остановки
+            if stop_event.wait(timeout=config.pause_general):
+                break
         except Exception as err:
             logger.exception(err)
             logger.error(f"Произошла ошибка {err}. Будет повторный запуск через 30 сек.")
-            time.sleep(30)
+            if stop_event.wait(timeout=30):
+                break
+
+    logger.info("Работа парсера остановлена")

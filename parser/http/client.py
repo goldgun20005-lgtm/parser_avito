@@ -29,6 +29,12 @@ class HttpClient:
 
         self._block_attempts = 0
 
+    def _backoff_delay(self, attempt: int) -> float:
+        """Экспоненциальная задержка с джиттером (capped 60с)."""
+        base = self.retry_delay * (2 ** max(0, attempt - 1))
+        base = min(base, 60)
+        return base + random.uniform(0, base * 0.3)
+
     def _build_client(self) -> requests.Session:
         _impersonate = random.choice(["chrome", "edge", "firefox", "safari"])
         session = requests.Session(
@@ -93,7 +99,7 @@ class HttpClient:
                         self.proxy.handle_block()
                         self._block_attempts = 0
 
-                    time.sleep(self.retry_delay)
+                    time.sleep(self._backoff_delay(attempt))
                     continue
 
                 # === успех ===
@@ -104,6 +110,6 @@ class HttpClient:
             except requests.RequestsError as e:
                 last_exc = e
                 logger.warning(f"Request error (attempt {attempt}): {e}")
-                time.sleep(self.retry_delay)
+                time.sleep(self._backoff_delay(attempt))
 
         raise RuntimeError("HTTP запросы были неуспешными") from last_exc

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, RootModel
+from pydantic import BaseModel, HttpUrl, RootModel, ConfigDict
 from typing import List, Optional, Dict, Any
 
 
@@ -98,6 +98,9 @@ class IvaStep(BaseModel):
 
 
 class Item(BaseModel):
+    # Игнорируем неизвестные поля Avito (устойчивость к изменениям разметки)
+    model_config = ConfigDict(extra="ignore")
+
     id: int | dict | None = None
     categoryId: int | dict | None = None
     locationId: int | dict | None = None

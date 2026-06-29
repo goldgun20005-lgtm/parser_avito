@@ -42,10 +42,11 @@ FROM python:3.11-slim
 ## 2. Анализ `entrypoint.sh`
 
 ```bash
-wait_seconds=1; sleep 1; cd /app; python parser_cls.py
+wait_seconds=1; sleep 1; cd /app; exec python parser_cls.py
 ```
-- Пауза-воркэраунд для podman. Запуск **без `exec`** → см. проблему сигналов выше.
-- **Рекомендация:** `exec python parser_cls.py`.
+- ✅ **ИСПРАВЛЕНО:** добавлен `exec` → python становится PID 1 и получает SIGTERM от `docker stop`.
+  В паре с обработчиком SIGTERM/SIGINT в `parser_cls.py` (`stop_event`) это даёт graceful shutdown.
+- Рекомендация по `init: true` уже учтена в `docker-compose.prod.yml`.
 
 ## 3. Анализ `docker-compose.yml`
 
