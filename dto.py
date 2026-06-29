@@ -55,4 +55,6 @@ class AvitoConfig:
     retry_delay: int = 5
     timeout: int = 20
     block_threshold: int = 3
+    webhook_url: Optional[str] = None
+    webhook_secret: Optional[str] = None
 

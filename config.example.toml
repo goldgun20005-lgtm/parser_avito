@@ -8,6 +8,8 @@ tg_token = ""            # Telegram Bot Token (от @BotFather)
 tg_chat_id = []          # список chat_id, напр. ["123456789"]
 vk_token = ""            # VK community token
 vk_user_id = []          # список ID получателей VK, напр. ["12324556"]
+webhook_url = ""         # URL webhook (например, n8n). Если задан — шлём JSON-POST на каждое новое объявление
+webhook_secret = ""      # секрет в заголовке X-Webhook-Secret (хранить в .env/на сервере)
 
 # --- Что мониторим ---
 urls = [

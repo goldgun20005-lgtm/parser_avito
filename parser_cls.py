@@ -169,7 +169,7 @@ class AvitoParse:
 
                 filter_ads = self.filter_ads(ads=ads)
 
-                self.notifier.notify_many(ads=filter_ads)
+                self.notifier.notify_many(ads=filter_ads, source=url)
 
                 # Просмотры
                 filter_ads = self.parse_views(ads=filter_ads)

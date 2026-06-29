@@ -8,10 +8,10 @@ class CompositeNotifier(Notifier):
     def __init__(self, notifiers: list[Notifier]):
         self.notifiers = notifiers
 
-    def notify(self, ad: Item = None, message: str = None):
+    def notify(self, ad: Item = None, message: str = None, **kwargs):
         for notifier in self.notifiers:
             try:
-                notifier.notify(ad=ad, message=message)
+                notifier.notify(ad=ad, message=message, **kwargs)
             except Exception as e:
                 logger.exception(
                     f"Ошибка {e} отправки уведомления через {notifier.__class__.__name__}"
@@ -19,5 +19,5 @@ class CompositeNotifier(Notifier):
 
 
 class NullNotifier(Notifier):
-    def notify(self, ad: Item = None, message: str = None):
+    def notify(self, ad: Item = None, message: str = None, **kwargs):
         pass

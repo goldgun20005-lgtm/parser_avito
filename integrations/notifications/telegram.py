@@ -128,7 +128,7 @@ class TelegramNotifier(Notifier):
                     return
             raise
 
-    def notify(self, ad: Item = None, message: str = None):
+    def notify(self, ad: Item = None, message: str = None, **kwargs):
         if ad:
             return self.notify_ad(ad=ad)
         return self.notify_message(message=message)

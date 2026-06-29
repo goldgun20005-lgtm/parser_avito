@@ -3,6 +3,7 @@ from integrations.notifications.base import Notifier
 from integrations.notifications.composite import NullNotifier, CompositeNotifier
 from integrations.notifications.telegram import TelegramNotifier
 from integrations.notifications.vk import VKNotifier
+from integrations.notifications.webhook import WebhookNotifier
 
 
 def build_notifier(config: AvitoConfig) -> Notifier:
@@ -19,6 +20,12 @@ def build_notifier(config: AvitoConfig) -> Notifier:
     if config.vk_token:
         for _user_id in config.vk_user_id:
             notifiers.append(VKNotifier(vk_token=config.vk_token, user_id=_user_id))
+
+    if getattr(config, "webhook_url", None):
+        notifiers.append(WebhookNotifier(
+            url=config.webhook_url,
+            secret=getattr(config, "webhook_secret", None),
+        ))
 
     if notifiers:
         return CompositeNotifier(notifiers)

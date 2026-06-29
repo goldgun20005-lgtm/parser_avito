@@ -7,14 +7,14 @@ from models import Item
 class Notifier(ABC):
 
     @abstractmethod
-    def notify(self, ad: Item = None, message: str = None):
+    def notify(self, ad: Item = None, message: str = None, **kwargs):
         """Отправляем одно объявление"""
         pass
 
-    def notify_many(self, ads: list[Item]):
+    def notify_many(self, ads: list[Item], **kwargs):
         """Отправляем список объявлений"""
         for ad in ads:
-            self.notify(ad=ad)
+            self.notify(ad=ad, **kwargs)
 
     # default форматирование
     def format(self, ad: Item) -> str:
