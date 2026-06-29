@@ -1,0 +1,66 @@
+# docker-compose.prod.yml — PRODUCTION-вариант (предложение, Фаза C)
+# Сценарий: надёжный 24/7, локальная сборка из исходников (не ghcr latest, #293),
+# уведомления через Webhook/n8n, антиблок через spfa.ru.
+#
+# Подготовка ПЕРЕД первым запуском:
+#   cp config.example.toml config.toml      # заполнить ссылки и spfa cookies_api_key
+#   cp .env.example .env                     # TZ и секреты
+#   touch database.db
+#   mkdir -p result storage logs backups
+#
+# Запуск:  docker compose -f docker-compose.prod.yml up -d --build
+# Логи:    docker compose -f docker-compose.prod.yml logs -f --tail=100
+#
+# ПРИМЕЧАНИЕ: образ сейчас собирается и запускается от root (см. DOCKER_AUDIT.md).
+# Полноценный non-root требует правки Dockerfile (P1.9). security_opt ниже — базовое ужесточение.
+
+services:
+  parser_avito:
+    container_name: avito
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: parser_avito:3.2.15
+    restart: unless-stopped
+    init: true                      # корректная доставка сигналов / reaper зомби
+    env_file:
+      - .env
+    environment:
+      - TZ=${TZ:-Europe/Moscow}
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./database.db:/app/database.db        # память просмотренных (создать touch заранее)
+      - ./result:/app/result                  # Excel-результаты
+      - ./storage:/app/storage                # cookies (own/spfa) — ВАЖНО: каталог, не cookies.json
+      - ./logs:/app/logs                      # логи loguru
+    healthcheck:
+      # прокси-healthcheck по свежести логов (точный — после внедрения heartbeat, P0.4)
+      test: ["CMD-SHELL", "test -n \"$(find /app/logs/app.log -mmin -15 2>/dev/null)\""]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1g                 # парсеру (curl_cffi) хватает; уточнить по нагрузке
+    security_opt:
+      - no-new-privileges:true
+
+  # Опционально: n8n на том же сервере (раздача друзьям). Раскомментируйте при необходимости.
+  # n8n:
+  #   image: n8nio/n8n:latest
+  #   container_name: n8n
+  #   restart: unless-stopped
+  #   ports:
+  #     - "127.0.0.1:5678:5678"     # наружу — только через reverse-proxy+HTTPS
+  #   environment:
+  #     - TZ=${TZ:-Europe/Moscow}
+  #     - N8N_HOST=${N8N_HOST:-localhost}
+  #   volumes:
+  #     - ./n8n_data:/home/node/.n8n
